@@ -3,7 +3,6 @@ package tui
 import (
 	"sort"
 	"strings"
-	"unicode/utf8"
 
 	"github.com/gorcon/rcon"
 	"github.com/gorcon/rcon-cli/internal/config"
@@ -452,12 +451,14 @@ func minecraftColors(input string) string {
 		text.Reset()
 	}
 
-	for i := 0; i < len(input); {
-		if input[i] == '§' && i+1 < len(input) {
+	runes := []rune(input)
+
+	for i := 0; i < len(runes); i++ {
+		if runes[i] == '§' && i+1 < len(runes) {
 			flush()
 
-			code := input[i+1]
-			i += 2
+			code := runes[i+1]
+			i++ // 跳過代碼字元，for 迴圈本身還會再 i++
 
 			switch code {
 			case '0':
@@ -480,7 +481,6 @@ func minecraftColors(input string) string {
 				style = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
 			case '9':
 				style = lipgloss.NewStyle().Foreground(lipgloss.Color("12"))
-
 			case 'a':
 				style = lipgloss.NewStyle().Foreground(lipgloss.Color("10"))
 			case 'b':
@@ -493,22 +493,16 @@ func minecraftColors(input string) string {
 				style = lipgloss.NewStyle().Foreground(lipgloss.Color("11"))
 			case 'f':
 				style = lipgloss.NewStyle().Foreground(lipgloss.Color("15"))
-
 			case 'l':
 				style = style.Bold(true)
-
 			case 'n':
 				style = style.Underline(true)
-
 			case 'o':
 				style = style.Italic(true)
-
 			case 'm':
 				style = style.Strikethrough(true)
-
 			case 'r':
 				style = lipgloss.NewStyle()
-
 			case 'k':
 				// Minecraft obfuscated 暫不處理
 			}
@@ -516,9 +510,7 @@ func minecraftColors(input string) string {
 			continue
 		}
 
-		r, size := utf8.DecodeRuneInString(input[i:])
-		text.WriteRune(r)
-		i += size
+		text.WriteRune(runes[i])
 	}
 
 	flush()
