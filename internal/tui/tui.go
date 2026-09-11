@@ -3,7 +3,6 @@ package tui
 import (
 	"sort"
 	"strings"
-	"time"
 	"unicode/utf8"
 
 	"github.com/gorcon/rcon"
@@ -454,7 +453,6 @@ func minecraftColors(input string) string {
 	}
 
 	for i := 0; i < len(input); {
-		// Minecraft 格式碼：§x
 		if input[i] == '§' && i+1 < len(input) {
 			flush()
 
@@ -462,7 +460,6 @@ func minecraftColors(input string) string {
 			i += 2
 
 			switch code {
-			// Minecraft 顏色
 			case '0':
 				style = lipgloss.NewStyle().Foreground(lipgloss.Color("0"))
 			case '1':
@@ -497,7 +494,6 @@ func minecraftColors(input string) string {
 			case 'f':
 				style = lipgloss.NewStyle().Foreground(lipgloss.Color("15"))
 
-			// 格式
 			case 'l':
 				style = style.Bold(true)
 
@@ -510,21 +506,16 @@ func minecraftColors(input string) string {
 			case 'm':
 				style = style.Strikethrough(true)
 
-			// 隨機字元 §k
-			// Terminal 不容易完整模擬 Minecraft 的 obfuscated，
-			// 先保持原文字，不讓它破壞輸出。
-			case 'k':
-				// intentionally ignored
-
-			// 重置
 			case 'r':
 				style = lipgloss.NewStyle()
+
+			case 'k':
+				// Minecraft obfuscated 暫不處理
 			}
 
 			continue
 		}
 
-		// 正常 UTF-8 字元
 		r, size := utf8.DecodeRuneInString(input[i:])
 		text.WriteRune(r)
 		i += size
@@ -536,15 +527,13 @@ func minecraftColors(input string) string {
 }
 
 func Run(cfg *config.Config) error {
-	p := tea.NewProgram(
-		New(cfg),
+	model := New(cfg)
+
+	program := tea.NewProgram(
+		model,
 		tea.WithAltScreen(),
 	)
 
-	_, err := p.Run()
-
+	_, err := program.Run()
 	return err
 }
-
-// Keep time imported for compatibility with Session timeout handling.
-var _ = time.Second

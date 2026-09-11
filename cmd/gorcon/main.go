@@ -9,11 +9,10 @@ import (
 	"github.com/gorcon/rcon-cli/internal/tui"
 )
 
-// Version displays service version in semantic versioning.
 var Version = "develop"
 
 func main() {
-	// No arguments: launch the TUI.
+	// 沒有參數 → 啟動 TUI
 	if len(os.Args) == 1 {
 		cfg, err := config.NewConfig("rcon.yaml")
 		if err != nil {
@@ -29,14 +28,14 @@ func main() {
 		return
 	}
 
-	// Arguments supplied: use the original CLI.
+	// 有參數 → 保留原本 CLI 行為
 	exec := executor.NewExecutor(os.Stdin, os.Stdout, Version)
 
 	if err := exec.Run(os.Args); err != nil {
 		fmt.Fprintln(os.Stderr, err)
-		_ = exec.Close()
+		exec.Close()
 		os.Exit(1)
 	}
 
-	_ = exec.Close()
+	exec.Close()
 }
