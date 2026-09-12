@@ -9,3 +9,5 @@ gorcon
 .tmp/
 .env
 .develop/
+
+rcon.yaml
