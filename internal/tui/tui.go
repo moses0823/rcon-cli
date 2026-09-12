@@ -3,6 +3,7 @@ package tui
 import (
 	"sort"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/gorcon/rcon"
 	"github.com/gorcon/rcon-cli/internal/config"
@@ -19,19 +20,19 @@ const (
 )
 
 type Model struct {
-	cfg      *config.Config
-	servers  []string
-	cursor   int
-	screen   screen
-	client   *rcon.Conn
-	status   string
-	input    string
-	cursorAt int
-	history  []string
+	cfg       *config.Config
+	servers   []string
+	cursor    int
+	screen    screen
+	client    *rcon.Conn
+	status    string
+	input     string
+	cursorAt  int
+	history   []string
 	historyAt int
-	output   []string
-	width    int
-	height   int
+	output    []string
+	width     int
+	height    int
 }
 
 var (
@@ -66,10 +67,10 @@ func New(cfg *config.Config) Model {
 	sort.Strings(servers)
 
 	return Model{
-		cfg:        cfg,
-		servers:    servers,
-		screen:     serverScreen,
-		status:     "Select a server",
+		cfg:     cfg,
+		servers: servers,
+		screen:  serverScreen,
+		status:  "Select a server",
 	}
 }
 
@@ -158,17 +159,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				errorStyle.Render("Error: "+msg.err.Error()),
 			)
 		} else {
-			if msg.result == "" {
-				m.output = append(
-					m.output,
-					normalStyle.Render("> "+msg.command),
-				)
-			} else {
-				m.output = append(
-					m.output,
-					normalStyle.Render("> "+msg.command),
-				)
+			m.output = append(
+				m.output,
+				normalStyle.Render("> "+msg.command),
+			)
 
+			if msg.result != "" {
 				m.output = append(
 					m.output,
 					minecraftColors(strings.TrimSpace(msg.result)),
@@ -280,7 +276,7 @@ func (m Model) handleConsoleKey(key string) (tea.Model, tea.Cmd) {
 		}
 
 		m.input = m.history[m.historyAt]
-		m.cursorAt = len(m.input)
+		m.cursorAt = utf8.RuneCountInString(m.input)
 
 	case "down":
 		if len(m.history) == 0 {
@@ -290,7 +286,7 @@ func (m Model) handleConsoleKey(key string) (tea.Model, tea.Cmd) {
 		if m.historyAt < len(m.history)-1 {
 			m.historyAt++
 			m.input = m.history[m.historyAt]
-			m.cursorAt = len(m.input)
+			m.cursorAt = utf8.RuneCountInString(m.input)
 		} else {
 			m.historyAt = len(m.history)
 			m.input = ""
@@ -303,7 +299,7 @@ func (m Model) handleConsoleKey(key string) (tea.Model, tea.Cmd) {
 		}
 
 	case "right":
-		if m.cursorAt < len(m.input) {
+		if m.cursorAt < utf8.RuneCountInString(m.input) {
 			m.cursorAt++
 		}
 
@@ -311,23 +307,36 @@ func (m Model) handleConsoleKey(key string) (tea.Model, tea.Cmd) {
 		m.cursorAt = 0
 
 	case "end":
-		m.cursorAt = len(m.input)
+		m.cursorAt = utf8.RuneCountInString(m.input)
 
 	case "backspace":
 		if m.cursorAt > 0 {
-			m.input = m.input[:m.cursorAt-1] + m.input[m.cursorAt:]
+			runes := []rune(m.input)
+			runes = append(runes[:m.cursorAt-1], runes[m.cursorAt:]...)
+			m.input = string(runes)
 			m.cursorAt--
 		}
 
 	case "delete":
-		if m.cursorAt < len(m.input) {
-			m.input = m.input[:m.cursorAt] + m.input[m.cursorAt+1:]
+		runes := []rune(m.input)
+
+		if m.cursorAt < len(runes) {
+			runes = append(runes[:m.cursorAt], runes[m.cursorAt+1:]...)
+			m.input = string(runes)
 		}
 
 	default:
-		if len(key) == 1 {
-			m.input = m.input[:m.cursorAt] + key + m.input[m.cursorAt:]
-			m.cursorAt++
+		if key != "" {
+			runes := []rune(m.input)
+			insert := []rune(key)
+
+			runes = append(
+				runes[:m.cursorAt],
+				append(insert, runes[m.cursorAt:]...)...,
+			)
+
+			m.input = string(runes)
+			m.cursorAt += len(insert)
 		}
 	}
 
@@ -421,17 +430,33 @@ func (m Model) consoleView() string {
 
 	prefix := normalStyle.Render("rcon> ")
 
-	input := m.input
+	inputRunes := []rune(m.input)
 
-	if m.cursorAt >= 0 && m.cursorAt <= len(input) {
-		input =
-			input[:m.cursorAt] +
-				"█" +
-				input[m.cursorAt:]
+	if m.cursorAt < 0 {
+		m.cursorAt = 0
+	}
+
+	if m.cursorAt > len(inputRunes) {
+		m.cursorAt = len(inputRunes)
+	}
+
+	var input strings.Builder
+
+	if m.cursorAt < len(inputRunes) {
+		input.WriteString(string(inputRunes[:m.cursorAt]))
+		input.WriteString(lipgloss.NewStyle().
+			Reverse(true).
+			Render(string(inputRunes[m.cursorAt])))
+		input.WriteString(string(inputRunes[m.cursorAt+1:]))
+	} else {
+		input.WriteString(string(inputRunes))
+		input.WriteString(lipgloss.NewStyle().
+			Reverse(true).
+			Render(" "))
 	}
 
 	b.WriteString(prefix)
-	b.WriteString(input)
+	b.WriteString(input.String())
 
 	return b.String()
 }
