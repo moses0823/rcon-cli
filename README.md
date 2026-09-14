@@ -28,6 +28,11 @@ C:\rcontui\
     └── 6b7t-moses.key
 ```
 
+### 使用前提
+
+Secure RCON 模式需要在 Minecraft Paper/Folia server 安裝並啟用
+[moses0823/Rcon-Security](https://github.com/moses0823/Rcon-Security) 插件。請使用本專案提供的 `rconcli` 用戶端連線；一般 Minecraft RCON client 不支援此 Secure RCON challenge-response 協議。
+
 ## 設定
 
 建立 `rcon.yaml`：

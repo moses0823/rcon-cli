@@ -28,6 +28,13 @@ C:\rcontui\
     └── 6b7t-moses.key
 ```
 
+### Prerequisites
+
+Secure RCON mode requires the [moses0823/Rcon-Security](https://github.com/moses0823/Rcon-Security) plugin to be installed and
+enabled on the Minecraft Paper/Folia server. Use the `rcontui` client from
+this project to connect; ordinary Minecraft RCON clients do not support this
+Secure RCON challenge-response protocol.
+
 ## Configuration
 
 Create `rcon.yaml`:
