@@ -1,24 +1,24 @@
 # rcontui
 
-A terminal-based RCON client with an interactive TUI and optional Secure RCON authentication.
+一個基於終端機的 RCON 用戶端，提供互動式 TUI 介面，以及可選的 Secure RCON 驗證功能。
 
-This project is a fork of [gorcon/rcon-cli](https://github.com/gorcon/rcon-cli), originally released under the MIT License.
+本專案 Fork 自 [gorcon/rcon-cli](https://github.com/gorcon/rcon-cli)，原專案採用 MIT License 發布。
 
-This fork adds additional features and modifications while retaining the original project's license and attribution.
+本 Fork 在保留原專案授權與版權聲明的基礎上，加入額外功能與修改。
 
-## Features
+## 功能
 
-* Interactive terminal UI
-* Minecraft RCON console
-* Multiple server configurations
-* Secure RCON authentication
-* HMAC-SHA256 challenge-response authentication
-* Separate authentication secret files
-* Windows support
+* 互動式終端機 TUI
+* Minecraft RCON 控制台
+* 多伺服器設定
+* Secure RCON 驗證
+* HMAC-SHA256 Challenge-Response 驗證
+* 獨立的驗證 Secret 檔案
+* Windows 支援
 
-## Installation
+## 安裝
 
-Download `rcontui.exe` and place it in a dedicated directory:
+下載 `rcontui.exe`，並將其放置在獨立的目錄中：
 
 ```text
 C:\rcontui\
@@ -28,33 +28,32 @@ C:\rcontui\
     └── 6b7t-moses.key
 ```
 
-## Configuration
+## 設定
 
-Create `rcon.yaml`:
+建立 `rcon.yaml`：
 
 ```yaml
 servers:
   6b7t:
     address: "abula.tw:25576"
-
     security:
       enabled: true
       client-id: "moses"
       secret-file: "secrets/6b7t-moses.key"
 ```
 
-### Configuration Options
+### 設定選項
 
-| Option                 | Description                        |
-| ---------------------- | ---------------------------------- |
-| `address`              | RCON or Secure RCON server address |
-| `security.enabled`     | Enable Secure RCON                 |
-| `security.client-id`   | Client identifier                  |
-| `security.secret-file` | Path to the authentication secret  |
+| 選項                     | 說明                       |
+| ---------------------- | ------------------------ |
+| `address`              | RCON 或 Secure RCON 伺服器位址 |
+| `security.enabled`     | 啟用 Secure RCON           |
+| `security.client-id`   | 用戶端識別名稱                  |
+| `security.secret-file` | 驗證 Secret 檔案路徑           |
 
 ## Secure RCON
 
-When enabled, `rcontui` connects to the Secure RCON Gateway instead of directly connecting to Minecraft's native RCON.
+啟用後，`rcontui` 會連接 Secure RCON Gateway，而不是直接連接 Minecraft 原生 RCON。
 
 ```text
 rcontui
@@ -67,7 +66,7 @@ Secure RCON Gateway
 Minecraft Native RCON
 ```
 
-Example:
+範例：
 
 ```yaml
 address: "abula.tw:25576"
@@ -78,41 +77,41 @@ security:
   secret-file: "secrets/6b7t-moses.key"
 ```
 
-The Minecraft native RCON port should remain private and should not be exposed directly to the Internet.
+Minecraft 原生 RCON Port 應保持私有，不應直接暴露在 Internet 上。
 
-## Secret File
+## Secret 檔案
 
-The secret is stored separately:
+Secret 會獨立儲存：
 
 ```text
 secrets\
 └── 6b7t-moses.key
 ```
 
-Do not commit secret files to Git.
+請勿將 Secret 檔案提交至 Git。
 
-Do not share them publicly.
+請勿公開分享 Secret 檔案。
 
-## Running
+## 執行
 
-Open PowerShell:
+開啟 PowerShell：
 
 ```powershell
 cd C:\rcontui
 .\rcontui.exe
 ```
 
-Use the keyboard to navigate:
+使用鍵盤進行操作：
 
 ```text
-↑ / ↓     Select server
-Enter     Connect
-Q         Quit
+↑ / ↓     選擇伺服器
+Enter     連線
+Q         離開
 ```
 
-## Multiple Servers
+## 多伺服器
 
-Multiple servers can be configured:
+可以設定多個伺服器：
 
 ```yaml
 servers:
@@ -129,54 +128,54 @@ servers:
       enabled: false
 ```
 
-Each server can independently enable or disable Secure RCON.
+每個伺服器都可以獨立啟用或停用 Secure RCON。
 
-## Security
+## 安全性
 
-Secure RCON uses HMAC-SHA256 challenge-response authentication.
+Secure RCON 使用 HMAC-SHA256 Challenge-Response 驗證。
 
-The authentication process uses:
+驗證過程使用：
 
 * Client ID
-* Server-generated nonce
-* Time-based authentication
-* Shared secret
+* Server 產生的 Nonce
+* 基於時間的驗證
+* 共用 Secret
 * HMAC-SHA256
 
-The shared secret is not transmitted directly during authentication.
+共用 Secret 不會在驗證過程中直接傳送。
 
-## Building
+## 建置
 
-This project requires Go.
+本專案需要 Go。
 
-Run:
+執行測試：
 
 ```powershell
 go test ./...
 ```
 
-Build the Windows executable:
+建立 Windows 執行檔：
 
 ```powershell
 go build -o rcontui.exe .
 ```
 
-## Fork Information
+## Fork 資訊
 
-This repository is based on:
+本 Repository 基於：
 
-**Original project:** `gorcon/rcon-cli`
+**原始專案：** `gorcon/rcon-cli`
 
-**Original repository:** https://github.com/gorcon/rcon-cli
+**原始 Repository：** https://github.com/gorcon/rcon-cli
 
-The original project is licensed under the MIT License.
+原始專案採用 MIT License。
 
-This fork retains the original copyright notices and license.
+本 Fork 保留原專案的版權聲明與授權。
 
 ## License
 
-This project is distributed under the MIT License.
+本專案採用 MIT License 發布。
 
-See [`LICENSE`](LICENSE) for the full license text.
+完整授權內容請參閱 [`LICENSE`](LICENSE)。
 
-The original project and its respective copyright notices remain subject to their original license terms.
+原始專案及其相關版權聲明仍受其原始授權條款約束。
