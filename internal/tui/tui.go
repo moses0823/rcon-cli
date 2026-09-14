@@ -7,6 +7,7 @@ import (
 
 	"github.com/gorcon/rcon"
 	"github.com/gorcon/rcon-cli/internal/config"
+	"github.com/gorcon/rcon-cli/internal/security"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -24,7 +25,8 @@ type Model struct {
 	servers   []string
 	cursor    int
 	screen    screen
-	client    *rcon.Conn
+	client    client
+	secure    bool
 	status    string
 	input     string
 	cursorAt  int
@@ -33,6 +35,11 @@ type Model struct {
 	output    []string
 	width     int
 	height    int
+}
+
+type client interface {
+	Execute(command string) (string, error)
+	Close() error
 }
 
 var (
@@ -79,12 +86,15 @@ func (m Model) Init() tea.Cmd {
 }
 
 type connectedMsg struct {
-	client *rcon.Conn
+	client client
 	name   string
+	secure bool
+	output []string
 }
 
 type connectErrorMsg struct {
-	err error
+	err    error
+	secure bool
 }
 
 type commandResultMsg struct {
@@ -101,25 +111,60 @@ func connectCmd(session config.Session, name string) tea.Cmd {
 			timeout = config.DefaultTimeout
 		}
 
+		address := session.NativeRCONAddress()
+		password := session.NativeRCONPassword()
+		var connectionOutput []string
+
+		if session.Security.Enabled {
+			connectionOutput = append(connectionOutput, normalStyle.Render("Secure RCON authentication..."))
+			secret, err := session.Security.SecretBytes()
+			if err != nil {
+				return connectErrorMsg{err: err, secure: true}
+			}
+			result, err := security.Authenticate(
+				session.SecurityAddress(),
+				session.Security.ClientID,
+				secret,
+			)
+			if err != nil {
+				return connectErrorMsg{err: err, secure: true}
+			}
+			connectionOutput = append(connectionOutput,
+				successStyle.Render("✓ Server connected"),
+				successStyle.Render("✓ Challenge received"),
+				successStyle.Render("✓ HMAC verified"),
+				successStyle.Render("✓ Authentication successful"),
+				normalStyle.Render("Connecting to native RCON..."),
+			)
+			return connectedMsg{
+				client: result.Connection,
+				name:   name,
+				secure: true,
+				output: append(connectionOutput, successStyle.Render("✓ Secure RCON connected")),
+			}
+		}
+
 		client, err := rcon.Dial(
-			session.Address,
-			session.Password,
+			address,
+			password,
 			rcon.SetDialTimeout(timeout),
 			rcon.SetDeadline(timeout),
 		)
 
 		if err != nil {
-			return connectErrorMsg{err: err}
+			return connectErrorMsg{err: err, secure: session.Security.Enabled}
 		}
 
 		return connectedMsg{
 			client: client,
 			name:   name,
+			secure: session.Security.Enabled,
+			output: append(connectionOutput, successStyle.Render("✓ RCON connected")),
 		}
 	}
 }
 
-func executeCmd(client *rcon.Conn, command string) tea.Cmd {
+func executeCmd(client client, command string) tea.Cmd {
 	return func() tea.Msg {
 		result, err := client.Execute(command)
 
@@ -141,8 +186,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case connectedMsg:
 		m.client = msg.client
+		m.secure = msg.secure
 		m.screen = consoleScreen
 		m.status = "Connected"
+		m.output = append(m.output, msg.output...)
 		m.output = append(m.output,
 			successStyle.Render("● Connected to "+msg.name),
 		)
@@ -150,6 +197,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case connectErrorMsg:
 		m.status = "Connection failed: " + msg.err.Error()
+		if msg.secure {
+			m.output = append(m.output, errorStyle.Render("Secure RCON authentication failed."), errorStyle.Render("Reason: "+msg.err.Error()))
+		}
 		return m, nil
 
 	case commandResultMsg:
@@ -238,6 +288,7 @@ func (m Model) handleConsoleKey(key string) (tea.Model, tea.Cmd) {
 		if m.client != nil {
 			_ = m.client.Close()
 			m.client = nil
+			m.secure = false
 		}
 
 		m.screen = serverScreen
@@ -376,6 +427,12 @@ func (m Model) serverView() string {
 	}
 
 	b.WriteString("\n")
+	secureStatus := "Disabled"
+	if len(m.servers) > 0 && (*m.cfg)[m.servers[m.cursor]].Security.Enabled {
+		secureStatus = "Enabled"
+	}
+	b.WriteString(helpStyle.Render("Secure RCON: " + secureStatus))
+	b.WriteString("\n")
 
 	if strings.Contains(m.status, "failed") {
 		b.WriteString(errorStyle.Render(m.status))
@@ -402,6 +459,12 @@ func (m Model) consoleView() string {
 	b.WriteString(titleStyle.Render("● " + name))
 	b.WriteString("  ")
 	b.WriteString(successStyle.Render("Connected"))
+	b.WriteString("  ")
+	if m.secure {
+		b.WriteString(successStyle.Render("Secure RCON: ON"))
+	} else {
+		b.WriteString(helpStyle.Render("Secure RCON: OFF"))
+	}
 	b.WriteString("\n")
 
 	b.WriteString(helpStyle.Render(

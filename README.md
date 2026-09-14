@@ -1,157 +1,182 @@
-# rcon-cli
-[![Mentioned in Awesome-Selfhosted](https://awesome.re/mentioned-badge.svg)](https://github.com/awesome-selfhosted/awesome-selfhosted)
-[![GitHub Build](https://github.com/gorcon/rcon-cli/workflows/build/badge.svg)](https://github.com/gorcon/rcon-cli/actions)
-[![Go Coverage](https://github.com/gorcon/rcon-cli/wiki/coverage.svg)](https://raw.githack.com/wiki/gorcon/rcon-cli/coverage.html)
-[![Go Report Card](https://goreportcard.com/badge/github.com/gorcon/rcon-cli)](https://goreportcard.com/report/github.com/gorcon/rcon-cli)
-[![GitHub All Releases](https://img.shields.io/github/downloads/gorcon/rcon-cli/total)](https://github.com/gorcon/rcon-cli/releases)
-[![Docker Pulls](https://img.shields.io/docker/pulls/outdead/rcon.svg)](https://hub.docker.com/r/outdead/rcon)
+# rcontui
 
-CLI for executing queries on a remote [Source dedicated game server](https://developer.valvesoftware.com/wiki/Source_Dedicated_Server), using the [RCON](https://developer.valvesoftware.com/wiki/Source_RCON_Protocol) protocol.
+A terminal-based RCON client with an interactive TUI and optional Secure RCON authentication.
 
-## Supported Games
-* [7 Days to Die](https://store.steampowered.com/app/251570) (add `-t telnet` to rcon-cli args)
-* [ARK: Survival Evolved](https://store.steampowered.com/app/346110)
-* [Avorion](https://store.steampowered.com/app/445220/Avorion/)
-* [Conan Exiles](https://store.steampowered.com/app/440900)
-* [Counter-Strike: Global Offensive](https://store.steampowered.com/app/730)
-* [Factorio](https://factorio.com/)
-* [Minecraft](https://www.minecraft.net)
-* [Project Zomboid](https://store.steampowered.com/app/108600) 
-* [Rust](https://store.steampowered.com/app/252490) (add `+rcon.web 0` to the args when starting the server or add `-t web` to `rcon-cli` args)
-* [Team Fortress 2](https://store.steampowered.com/app/440/Team_Fortress_2/)
-* [V Rising](https://store.steampowered.com/app/1604030/V_Rising/)
-* [Palworld](https://store.steampowered.com/app/1623730/Palworld/)
+This project is a fork of [gorcon/rcon-cli](https://github.com/gorcon/rcon-cli), originally released under the MIT License.
 
-Open pull request if you have successfully used a package with another game with rcon support and add it to the list.
+This fork adds additional features and modifications while retaining the original project's license and attribution.
+
+## Features
+
+* Interactive terminal UI
+* Minecraft RCON console
+* Multiple server configurations
+* Secure RCON authentication
+* HMAC-SHA256 challenge-response authentication
+* Separate authentication secret files
+* Windows support
 
 ## Installation
-Download the binary for your platform from the [latest releases](https://github.com/gorcon/rcon-cli/releases/latest)
 
-See [Changelog](CHANGELOG.md) for release details
+Download `rcontui.exe` and place it in a dedicated directory:
 
-### Docker
-```bash
-docker pull outdead/rcon
-```
-
-## Usage
 ```text
-USAGE:
-   rcon [options] [commands...]
-
-GLOBAL OPTIONS:
-   --address value, -a value   Set host and port to remote server. Example 127.0.0.1:16260
-   --password value, -p value  Set password to remote server
-   --type value, -t value      Specify type of connection (default: rcon)
-   --log value, -l value       Path to the log file. If not specified it is taken from the config
-   --config value, -c value    Path to the configuration file (default: rcon.yaml)
-   --env value, -e value       Config environment with server credentials (default: default)
-   --skip, -s                  Skip errors and run next command (default: false)
-   --timeout value, -T value   Set dial and execute timeout (default: 10s)
-   --help, -h                  show help (default: false)
-   --version, -v               print the version (default: false)
+C:\rcontui\
+├── rcontui.exe
+├── rcon.yaml
+└── secrets\
+    └── 6b7t-moses.key
 ```
 
-Rcon CLI can be run in two modes - in the mode of a single query and in the mode of reading the input stream
+## Configuration
 
-### Single mode
-Server address, password and command to server must be specified in flags at startup. Example:  
-```bash
-./rcon -a 127.0.0.1:16260 -p mypassword command
-```
+Create `rcon.yaml`:
 
-It is possible to send several commands in one request. Example:  
-```bash
-./rcon -a 127.0.0.1:16260 -p mypassword command "command with several words" 'command "with double quotes"'
-```
-
-If commands passed, they sent in a single mode. The response displayed, and the CLI will exit.
-
-### Interactive input stream mode
-To run CLI in interactive mode run `rcon` without commands. Example:
-```bash
-./rcon -a 127.0.0.1:16260 -p mypassword
-```
-
-Use `^C` to terminate or type command `:q` to exit.    
-
-### In Docker
-```bash
-docker run -it --rm outdead/rcon ./rcon [options] [commands...]
-```
-
-You can add your config file as volume:
-```bash
-docker run -it --rm \
-      -v /path/to/rcon-local.yaml:/rcon.yaml \
-      outdead/rcon ./rcon -c rcon.yaml -e default players
-```
-
-## Configuration file
-For more convenient use, the ability to create the `rcon.yaml` configuration file provided. You can save the host and port of the remote server and its password. If the configuration file exists, and the default block filled in it, then at startup the `-a` and `-p` flags can be omitted. Examples:
-```bash
-./rcon -a 127.0.0.1:16260 players
-./rcon status
-./rcon -p mypassword
-./rcon
-```
-
-Default configuration file name is `rcon.yaml`. File must be saved in yaml format. It is also possible to set the environment name and connection parameters for each server. You can enable logging requests and responses. To do this, you need to define the log variable in the environment blocks. You can do 
-this for each server separately and create different log files for them. If the path to the log file not specified, then logging will not be conducted. 
 ```yaml
-default:
-  address: "127.0.0.1:16260"
-  password: "password"
-  log: "rcon-default.log"
-zomboid:
-  address: "127.0.0.1:16260"
-  password: "password"
-  log: "rcon-zomboid.log"
-rust:
-  address: "127.0.0.1:28003"
-  password: "password"
-7dtd:
-  address: "172.19.0.2:8081"
-  password: "password"
-  type: "telnet"
+servers:
+  6b7t:
+    address: "abula.tw:25576"
+
+    security:
+      enabled: true
+      client-id: "moses"
+      secret-file: "secrets/6b7t-moses.key"
 ```
 
-## Args
-You can choose the environment at the start:
-```bash
-./rcon -e rust status
-./rcon -e zomboid
+### Configuration Options
+
+| Option                 | Description                        |
+| ---------------------- | ---------------------------------- |
+| `address`              | RCON or Secure RCON server address |
+| `security.enabled`     | Enable Secure RCON                 |
+| `security.client-id`   | Client identifier                  |
+| `security.secret-file` | Path to the authentication secret  |
+
+## Secure RCON
+
+When enabled, `rcontui` connects to the Secure RCON Gateway instead of directly connecting to Minecraft's native RCON.
+
+```text
+rcontui
+   │
+   │ Secure authentication
+   ▼
+Secure RCON Gateway
+   │
+   ▼
+Minecraft Native RCON
 ```
 
-Set custom config file:
-```bash
-./rcon -c /path/to/config/file.yaml
+Example:
+
+```yaml
+address: "abula.tw:25576"
+
+security:
+  enabled: true
+  client-id: "moses"
+  secret-file: "secrets/6b7t-moses.key"
 ```
 
-Use `-l` argument to specify path to log file:
-```bash
-./rcon -l /path/to/file.log
+The Minecraft native RCON port should remain private and should not be exposed directly to the Internet.
+
+## Secret File
+
+The secret is stored separately:
+
+```text
+secrets\
+└── 6b7t-moses.key
 ```
 
-Use `-t` argument to specify the protocol type:
-```bash
-# 7 Days to Die
-./rcon -a 172.19.0.2:8081 -p password -t telnet version
+Do not commit secret files to Git.
 
-# Rust
-./rcon -a 127.0.0.1:28016 -p password -t web status
+Do not share them publicly.
+
+## Running
+
+Open PowerShell:
+
+```powershell
+cd C:\rcontui
+.\rcontui.exe
 ```
 
-Use `-T` argument to specify dial and execute timeout:
-```bash
-./rcon -a 172.19.0.2:8081 -p password -t telnet -T 10s version
+Use the keyboard to navigate:
+
+```text
+↑ / ↓     Select server
+Enter     Connect
+Q         Quit
 ```
 
-## Contribute
-If you think that you have found a bug, create an issue and indicate your operating system, platform, and the game on which the error reproduced. Also describe what you were doing so that the error could be reproduced.
+## Multiple Servers
+
+Multiple servers can be configured:
+
+```yaml
+servers:
+  6b7t:
+    address: "abula.tw:25576"
+    security:
+      enabled: true
+      client-id: "moses"
+      secret-file: "secrets/6b7t-moses.key"
+
+  local:
+    address: "127.0.0.1:25575"
+    security:
+      enabled: false
+```
+
+Each server can independently enable or disable Secure RCON.
+
+## Security
+
+Secure RCON uses HMAC-SHA256 challenge-response authentication.
+
+The authentication process uses:
+
+* Client ID
+* Server-generated nonce
+* Time-based authentication
+* Shared secret
+* HMAC-SHA256
+
+The shared secret is not transmitted directly during authentication.
+
+## Building
+
+This project requires Go.
+
+Run:
+
+```powershell
+go test ./...
+```
+
+Build the Windows executable:
+
+```powershell
+go build -o rcontui.exe .
+```
+
+## Fork Information
+
+This repository is based on:
+
+**Original project:** `gorcon/rcon-cli`
+
+**Original repository:** https://github.com/gorcon/rcon-cli
+
+The original project is licensed under the MIT License.
+
+This fork retains the original copyright notices and license.
 
 ## License
-MIT License, see [LICENSE](LICENSE)
 
-## Stargazers over time
-[![Stargazers over time](https://starchart.cc/gorcon/rcon-cli.svg?variant=adaptive)](https://starchart.cc/gorcon/rcon-cli)
+This project is distributed under the MIT License.
+
+See [`LICENSE`](LICENSE) for the full license text.
+
+The original project and its respective copyright notices remain subject to their original license terms.

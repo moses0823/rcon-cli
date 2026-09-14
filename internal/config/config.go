@@ -102,8 +102,22 @@ func (cfg *Config) parse(name string) error {
 
 	switch ext := path.Ext(name); ext {
 	case ".yml", ".yaml":
+		var wrapped struct {
+			Servers Config `yaml:"servers"`
+		}
+		if err = yaml.Unmarshal(file, &wrapped); err == nil && wrapped.Servers != nil {
+			*cfg = wrapped.Servers
+			return nil
+		}
 		err = yaml.Unmarshal(file, cfg)
 	case ".json":
+		var wrapped struct {
+			Servers Config `json:"servers"`
+		}
+		if err = json.Unmarshal(file, &wrapped); err == nil && wrapped.Servers != nil {
+			*cfg = wrapped.Servers
+			return nil
+		}
 		err = json.Unmarshal(file, cfg)
 	default:
 		err = fmt.Errorf("%w %s", ErrUnsupportedFileExt, ext)
